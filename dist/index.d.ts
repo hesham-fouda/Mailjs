@@ -48,8 +48,17 @@ declare class Mailjs {
     on(event: "seen" | "delete" | "arrive" | "error" | "open", callback: type.MessageCallback | type.EmptyCallback | type.SSEErrorEvent): void;
     /** Clears the events and safely closes event listener. */
     off(): void;
-    /** Create random account. */
-    createOneAccount(useUUID?: boolean): type.CreateOneAccountResult;
+    /**
+     * Create a random account.
+     *
+     * Backwards compatible: pass `true`/`false` for the legacy useUUID flag.
+     * Or pass an options object:
+     *   - `domain` skips the getDomains() API call entirely
+     *   - `name` sets the exact local-part (overrides prefix/hashSize/useUUID)
+     *   - `prefix` + `hashSize` build a `<prefix><randomHex>` local-part
+     *   - `password` overrides the auto-generated one
+     */
+    createOneAccount(options?: boolean | type.CreateOneAccountOptions): type.CreateOneAccountResult;
     _generateHash(size: number): string;
     /** @private */
     _send(path: string, method?: type.Methods, body?: object, retry?: number): type.PromiseResult<any>;

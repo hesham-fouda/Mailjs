@@ -237,38 +237,68 @@ class Mailjs {
 
   // Helper
 
-  /** Create random account. */
+  /**
+   * Create a random account.
+   *
+   * Backwards compatible: pass `true`/`false` for the legacy useUUID flag.
+   * Or pass an options object:
+   *   - `domain` skips the getDomains() API call entirely
+   *   - `name` sets the exact local-part (overrides prefix/hashSize/useUUID)
+   *   - `prefix` + `hashSize` build a `<prefix><randomHex>` local-part
+   *   - `password` overrides the auto-generated one
+   */
   async createOneAccount(
-    useUUID: boolean = false,
+    options: boolean | type.CreateOneAccountOptions = false,
   ): type.CreateOneAccountResult {
-    // 1) Get a domain name.
-    let domain: any = await this.getDomains();
+    const opts: type.CreateOneAccountOptions =
+      typeof options === "boolean" ? { useUUID: options } : options;
 
-    if (!domain.status) return domain;
-    else domain = domain.data[0].domain;
+    // 1) Domain — caller-supplied wins; otherwise hit /domains once.
+    let domain = opts.domain;
+    if (!domain) {
+      const list: any = await this.getDomains();
+      if (!list.status) return list;
+      const items: any[] = Array.isArray(list.data) ? list.data : [];
+      if (items.length === 0) {
+        return {
+          status: false,
+          statusCode: 0,
+          message: "No domains available",
+          data: { username: "", password: "" },
+        };
+      }
+      domain = items[0].domain;
+    }
 
-    // 2) Generate a username (test@domain.com).
-    const username = `${useUUID ? randomUUID() : this._generateHash(8)}@${domain}`;
+    // 2) Local-part: explicit name > prefix+hash > UUID > random hex.
+    const hashSize = opts.hashSize ?? 8;
+    let local: string;
+    if (opts.name) {
+      local = opts.name;
+    } else if (opts.prefix) {
+      local = `${opts.prefix}${this._generateHash(hashSize)}`;
+    } else if (opts.useUUID) {
+      local = randomUUID();
+    } else {
+      local = this._generateHash(hashSize);
+    }
+    const username = `${local}@${domain}`;
 
-    // 3) Generate a password and register.
-    const password = this._generateHash(8);
-    let registerRes: any = await this.register(username, password);
+    // 3) Password.
+    const password = opts.password ?? this._generateHash(8);
 
+    // 4) Register + login.
+    const registerRes: any = await this.register(username, password);
     if (!registerRes.status) return registerRes;
 
-    // 4) Login.
-    let loginRes: any = await this.login(username, password);
-
+    const loginRes: any = await this.login(username, password);
     if (!loginRes.status) return loginRes;
 
     return {
       status: true,
       statusCode: loginRes.statusCode,
       message: "ok",
-      data: {
-        username,
-        password,
-      },
+      data: { username, password },
     };
   }
 
