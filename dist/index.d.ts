@@ -6,9 +6,14 @@ declare class Mailjs {
     private listener;
     private token;
     private rateLimitRetries;
+    private headers;
     id: string;
     address: string;
-    constructor({ rateLimitRetries }?: {
+    constructor({ baseUrl, baseMercure, headers, rateLimitRetries, }?: {
+        baseUrl?: string;
+        baseMercure?: string;
+        /** Extra headers merged into every request (e.g. `x-api-key`). */
+        headers?: Record<string, string>;
         rateLimitRetries?: number;
     });
     /** Creates an Account resource. */

@@ -10,11 +10,13 @@ class Mailjs {
     listener;
     token;
     rateLimitRetries;
+    headers;
     id;
     address;
-    constructor({ rateLimitRetries } = {}) {
-        this.baseUrl = "https://api.mail.tm";
-        this.baseMercure = "https://mercure.mail.tm/.well-known/mercure";
+    constructor({ baseUrl, baseMercure, headers, rateLimitRetries, } = {}) {
+        this.baseUrl = baseUrl ?? "https://api.mail.tm";
+        this.baseMercure = baseMercure ?? "https://mercure.mail.tm/.well-known/mercure";
+        this.headers = headers ?? {};
         this.listener = null;
         this.events = {};
         this.token = "";
@@ -215,6 +217,7 @@ class Mailjs {
                 authorization: `Bearer ${this.token}`,
             },
         };
+        Object.assign(options.headers, this.headers);
         if (method === "POST" || method === "PATCH") {
             const contentType = method === "PATCH" ? "merge-patch+json" : "json";
             options.headers["content-type"] = `application/${contentType}`;

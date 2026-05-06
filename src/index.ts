@@ -10,12 +10,25 @@ class Mailjs {
   private listener: any;
   private token: string;
   private rateLimitRetries: number;
+  private headers: Record<string, string>;
   id: string;
   address: string;
 
-  constructor({ rateLimitRetries }: { rateLimitRetries?: number } = {}) {
-    this.baseUrl = "https://api.mail.tm";
-    this.baseMercure = "https://mercure.mail.tm/.well-known/mercure";
+  constructor({
+    baseUrl,
+    baseMercure,
+    headers,
+    rateLimitRetries,
+  }: {
+    baseUrl?: string;
+    baseMercure?: string;
+    /** Extra headers merged into every request (e.g. `x-api-key`). */
+    headers?: Record<string, string>;
+    rateLimitRetries?: number;
+  } = {}) {
+    this.baseUrl = baseUrl ?? "https://api.mail.tm";
+    this.baseMercure = baseMercure ?? "https://mercure.mail.tm/.well-known/mercure";
+    this.headers = headers ?? {};
     this.listener = null;
     this.events = {};
     this.token = "";
@@ -279,6 +292,7 @@ class Mailjs {
         authorization: `Bearer ${this.token}`,
       },
     };
+    Object.assign(options.headers, this.headers);
 
     if (method === "POST" || method === "PATCH") {
       const contentType = method === "PATCH" ? "merge-patch+json" : "json";
